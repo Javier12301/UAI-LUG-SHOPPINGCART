@@ -1,16 +1,16 @@
 import dotenv from "dotenv";
-import express from "express";
+import express, { Express } from "express";
 import mongoose from "mongoose";
 import apiCart from "./routes/api/index"
 
 dotenv.config();
 
 //Inciar app express
-const app = express();
+const app: Express = express();
 
 //Settings
-app.use(express.json({limit: "10mb"}));
-app.use(express.urlencoded({ extended: true}));
+app.use(express.json({limit: "10mb" }));
+app.use(express.urlencoded({ extended: true }));
 
 //Routes, esta será nuestra ruta principal donde se encontrarán las Colecciones de datos guardadas en MongoDB
 app.use("/ShoppingCart", apiCart);
