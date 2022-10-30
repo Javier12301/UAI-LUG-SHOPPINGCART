@@ -18,6 +18,20 @@ const productosController = {
             res.status(500).send(error)
         }
     },
+
+    //Getunique es utilizado para buscar un producto en especifico
+    getunique: async (req: Request, res: Response) => {
+        try
+        {
+            const verProductosUnique = await productosModel.findOne({...req.params})
+            res.status(200).send(verProductosUnique)
+        }
+        catch (error)
+        {
+            res.status(500).send(error)
+        }
+    },
+
     //Para agregar productos
     add: async (req: Request, res: Response) => {
         try 
@@ -30,6 +44,8 @@ const productosController = {
             res.status(500).send(error)
         }
     },
+
+    
 }
 //Exportar los controladores
 export default productosController

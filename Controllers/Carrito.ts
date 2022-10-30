@@ -1,9 +1,10 @@
+import { Console } from "console";
 import { Request, Response} from "express";
 import carritoModel from "../models/carrito";
 
 const carritoController = {
         //Req tendrá la información sobre la petición HTTP del Evento
-        //Res devolverá la repuesta HTTP deseada.
+        //Res devolverá la repuesta HTTP deseada.   
         get: async (req: Request, res: Response) => {
             try
             {
@@ -17,6 +18,7 @@ const carritoController = {
                 res.status(500).send(error)
             }
         },
+
 }
 
 export default carritoController;

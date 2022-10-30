@@ -1,7 +1,7 @@
-ID,Nombre_Producto,Cantidad
-1,Manzana,6
-2,Banana,3
-3,Pera,8
-4,Zanahoria,5
-5,Cebollas,2
-6,Lechugas,4
+ID,Nombre_Producto,Cantidad,Precio
+1,Manzana,6,10
+2,Banana,3,8
+3,Pera,8,9
+4,Zanahoria,5,3
+5,Cebollas,2,7
+6,Lechugas,4,2
