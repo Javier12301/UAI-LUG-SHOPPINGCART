@@ -9,4 +9,5 @@ const router = Router();
 router.use("/productos", productosRoutes)
 router.use("/carrito", carritoRoutes)
 
+
 export default router;

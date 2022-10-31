@@ -43,9 +43,11 @@ const productosController = {
     add: async (req: Request, res: Response) => {
         try 
         {
+             //Aquí se programó para que se escriba en el body todo los datos deseados para agregar
             const producto = new productosModel({...req.body})
             await producto.save()
             res.send(producto)
+            res.status(200)
         } catch (error) {
             //Los valos de status son los tipos de errores que nosotros queremos que salga -> 500 es error de servidor
             res.status(500).send(error)
@@ -56,7 +58,22 @@ const productosController = {
     delete: async (req: Request, res: Response) => {
         try
         {
-
+            //Aquí se programó para que sólo se escriba el parametro que se desea eliminar
+            const verProducto = await productosModel.findOne({... req.params})
+            //Revisará sí existe el producto deseado
+            if(verProducto?.Nombre_Producto != undefined){
+                const productoNombre = await productosModel.findOneAndDelete({... req.params});
+                res.send(`Se elimino ${productoNombre?.Nombre_Producto} y sus respectivos valores de la base de datos.`);
+                res.status(200);
+            }else{
+                res.send(`El producto ${verProducto} no existe en la base de datos.`)
+                //HTTP STATUS NOT FOUND
+                res.status(404);
+            }
+        }
+        catch(error)
+        {
+            res.status(500);
         }
     },
 
