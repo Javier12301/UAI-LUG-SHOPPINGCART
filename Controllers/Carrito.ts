@@ -63,11 +63,25 @@ const carritoController = {
             try
             {
                 //Buscar el producto a eliminar del carrito con parametros
-                const BuscarProducto = await carritoModel.findOne({... req.params})
+                const BuscarProducto = await carritoModel.findOne({Nombre_Producto: req.params.Nombre_Producto})
+                //Antes de eliminarlo creo también una variable que conecta con la base de datos de Producto
+                const Productos = await productosModel.findOne({... req.params})
                 //Este if sirve para comprobar si existe el producto deseado
-                if(BuscarProducto?.Nombre_Producto != null || BuscarProducto?.Nombre_Producto != undefined){
-                    const productoNombre = await carritoModel.findOneAndDelete({... req.params})
-                    res.status(200).send(`El producto ${BuscarProducto.Nombre_Producto} se elimino con exito del carrito`);
+                if(BuscarProducto?.Nombre_Producto != undefined && Productos?.Nombre_Producto != undefined){
+                //Creo la variable del producto del carrito que se está por eliminar para devolver el stock en la base de datos de Producto
+                    const StockCarrito = {Cantidad: BuscarProducto?.Cantidad}
+                    //Guardo el stock que tiene almacenado la base de datos de Producto
+                    const StockProductos = {Cantidad: Productos?.Cantidad}
+                    //Ahora creo una variable que guardará el stock de ProductoCarrito y sumará ese Stock con el Stock de la base de datos de Producto
+                    const TotalStock = StockCarrito.Cantidad + StockProductos.Cantidad
+                    const productoNombre = await carritoModel.findOneAndDelete({Nombre_Producto: req.params.Nombre_Producto})
+                    //Una vez eliminado la base de datos, se guardará los stock sumados a la base de datos de PRODUCTOS
+                    Productos.Cantidad = TotalStock;
+                    Productos.save()
+                    res.status(200).send(`El producto ${BuscarProducto.Nombre_Producto} se elimino con exito del carrito y se devolvió el stock del carrito a la base de datos de Productos`);
+                    
+                    
+
                 }else{
                     res.status(404).send(`El producto ${req.params.Nombre_Producto} no existe en la base de datos`);
                 }
