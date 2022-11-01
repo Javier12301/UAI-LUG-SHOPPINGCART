@@ -1,5 +1,5 @@
 # Repositorio de la API SHOPPINGCART - Javier Ramírez
-TP FINAL de Lenguaje de última generación de la carrera en Ingeniería en Sistemas de la [Universidad Abierta Interamericana](https://uai.edu.ar).
+TP FINAL de Lenguaje de última generación de la carrera de Ingeniería en Sistemas de la [Universidad Abierta Interamericana](https://uai.edu.ar).
 
 En este repositorio se encontrará códigos usados en clases e investigados de Internet, en especial Mozilla Developer y mongoose documentation.
 
