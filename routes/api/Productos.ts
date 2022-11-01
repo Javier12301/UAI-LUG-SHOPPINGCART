@@ -7,14 +7,14 @@ const router = Router();
 //Aquí utilizaremos las controladoras creadas para productos.
 
 //GET
-router.get("/", productosController.get);
+router.get("/", productosController.get)
 //Utilizar parametros para seleccionar un producto único
-router.get('/:Nombre_Producto', productosController.getunique);
+router.get('/:Nombre_Producto', productosController.getunique)
 
 //POST
-router.post("/", productosController.add);
+router.post("/", productosController.add)
 
 //DELETE
-router.delete("/:Nombre_Producto", productosController.delete);
+router.delete("/:Nombre_Producto", productosController.delete)
 
 export default router;

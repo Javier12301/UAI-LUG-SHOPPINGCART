@@ -9,8 +9,8 @@ const productosController = {
         try
         {
             //Obtener Productos
-            const verProductos = await productosModel.find()
-            res.status(200).send(verProductos)
+            const buscarProductos = await productosModel.find()
+            res.status(200).send(buscarProductos)
         }
         catch (error)
         {
@@ -23,12 +23,12 @@ const productosController = {
     getunique: async (req: Request, res: Response) => {
         try
         {
-            const verProductosUnique = await productosModel.findOne({... req.params})
+            const buscarProductosUnique = await productosModel.findOne({... req.params})
             
             //Sí el producto no existe la API mandará un HTTP STATUS NOT FOUND
-            if(verProductosUnique?.Nombre_Producto != undefined)
+            if(buscarProductosUnique?.Nombre_Producto != undefined)
             {
-                res.status(200).send(verProductosUnique)
+                res.status(200).send(buscarProductosUnique)
             }else{
                 res.status(404).send(`El producto escrito en los parametros no existe en la base de datos.`);
             }
@@ -44,10 +44,18 @@ const productosController = {
         try 
         {
              //Aquí se programó para que se escriba en el body todo los datos deseados para agregar
-            const producto = new productosModel({...req.body})
-            await producto.save()
-            res.send(producto)
-            res.status(200)
+            const existeProductos = await productosModel.findOne({Nombre_Producto: req.body.Nombre_Producto})
+            if(existeProductos){
+                //Solicitud Incorrecta HTTP STATUS 400, Server no procesa una solicitud por algo ya existente
+                res.status(400).send(`El producto ${existeProductos.Nombre_Producto} ya se encuentra en la base de datos`)
+            }else{
+                const addProducto = new productosModel({... req.body})
+                await addProducto.save()
+                res.status(200).send(addProducto)
+                
+            }
+
+             
         } catch (error) {
             //Los valos de status son los tipos de errores que nosotros queremos que salga -> 500 es error de servidor
             res.status(500).send(error)
@@ -59,16 +67,17 @@ const productosController = {
         try
         {
             //Aquí se programó para que sólo se escriba el parametro que se desea eliminar
-            const verProducto = await productosModel.findOne({... req.params})
+            const BuscarProducto = await productosModel.findOne({... req.params})
             //Revisará sí existe el producto deseado
-            if(verProducto?.Nombre_Producto != undefined){
+            if(BuscarProducto?.Nombre_Producto != undefined || BuscarProducto?.Nombre_Producto != null){
                 const productoNombre = await productosModel.findOneAndDelete({... req.params});
-                res.send(`Se elimino ${productoNombre?.Nombre_Producto} y sus respectivos valores de la base de datos.`);
-                res.status(200);
-            }else{
-                res.send(`El producto ${verProducto} no existe en la base de datos.`)
+                res.status(200).send(`Se elimino ${productoNombre?.Nombre_Producto} y sus respectivos valores de la base de datos.`);
+            }
+            else
+            {
+                res.status(404).send(`El producto ${req.params.Nombre_Producto} no existe en la base de datos.`)
                 //HTTP STATUS NOT FOUND
-                res.status(404);
+                
             }
         }
         catch(error)
