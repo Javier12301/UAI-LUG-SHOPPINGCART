@@ -1,0 +1,77 @@
+{
+	"info": {
+		"_postman_id": "39897793-328b-4736-aa73-a12f43c668fb",
+		"name": "Carrito",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "23124487"
+	},
+	"item": [
+		{
+			"name": "getCarrito LISTADO COMPLETO",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "localhost:4000/ShoppingCart/carrito",
+					"host": [
+						"localhost"
+					],
+					"port": "4000",
+					"path": [
+						"ShoppingCart",
+						"carrito"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "postProductosCarrito",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n    \"Nombre_Producto\": \"dd\",\r\n    \"Cantidad\": 8\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "localhost:4000/ShoppingCart/carrito",
+					"host": [
+						"localhost"
+					],
+					"port": "4000",
+					"path": [
+						"ShoppingCart",
+						"carrito"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "deleteProductos por Parametros",
+			"request": {
+				"method": "DELETE",
+				"header": [],
+				"url": {
+					"raw": "localhost:4000/ShoppingCart/carrito/Computadoras",
+					"host": [
+						"localhost"
+					],
+					"port": "4000",
+					"path": [
+						"ShoppingCart",
+						"carrito",
+						"Computadoras"
+					]
+				}
+			},
+			"response": []
+		}
+	]
+}

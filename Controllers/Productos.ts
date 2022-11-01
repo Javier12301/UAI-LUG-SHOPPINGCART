@@ -48,14 +48,19 @@ const productosController = {
             if(existeProductos){
                 //Solicitud Incorrecta HTTP STATUS 400, Server no procesa una solicitud por algo ya existente
                 res.status(400).send(`El producto ${existeProductos.Nombre_Producto} ya se encuentra en la base de datos`)
-            }else{
+            }else
+            {
                 const addProducto = new productosModel({... req.body})
+                if(addProducto.Cantidad > 0 && addProducto.Nombre_Producto != "" && addProducto.Precio >= 0)
+                {
                 await addProducto.save()
                 res.status(200).send(addProducto)
-                
-            }
-
-             
+                }else
+                {
+                    //BAD REQUEST 
+                    res.status(400).send(`* La cantidad de productos que se desea agregar no puede ser de 0 ni inferior a este\n* Tampoco puede tener un nombre de caracter vacio\n* Los precios deben ser superior o igual a 0`);
+                }                           
+            }         
         } catch (error) {
             //Los valos de status son los tipos de errores que nosotros queremos que salga -> 500 es error de servidor
             res.status(500).send(error)

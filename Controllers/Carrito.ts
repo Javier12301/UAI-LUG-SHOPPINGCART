@@ -1,4 +1,4 @@
-import { Console } from "console";
+import { Console, info } from "console";
 import { Request, Response} from "express";
 import { type } from "os";
 import carritoModel from "../models/carrito";
@@ -32,16 +32,27 @@ const carritoController = {
                 
                 //Revisar si existe el producto antes de agregarlo
                 if(buscarProductos?.Nombre_Producto != undefined || buscarProductos?.Nombre_Producto != null){
-                //CantidadCART es la cantidad de productos que se quiuere tener ahora
-                const CantidadCART = {Cantidad: req.body.Cantidad}
-                if(CantidadCART.Cantidad <= buscarProductos.Cantidad ){
-                    //Si se cumple la condición, se agregará el producto y se descontará la cantidad de productos del model product
-                    const addProducto = new carritoModel({Nombre_Producto: buscarProductos?.Nombre_Producto, Cantidad: req.body.Cantidad, Precio: buscarProductos?.Precio});
+                //OperacionesCART es la cantidad de productos que se quiuere tener ahora y también tendrá el precio que se obtendrá de la base de datos productos
+                const OperacionesCART = {Cantidad: req.body.Cantidad, Precio: buscarProductos.Precio}
+                if(OperacionesCART.Cantidad <= buscarProductos.Cantidad ){
+                    //Si se cumple la condición, se agregará el producto y se descontará la cantidad de productos del model producto                   
+                    //La variable TotalPrecio guardará el nuevo precio según la cantidad de productos ingresados
+                    const TotalPrecio = OperacionesCART.Precio * OperacionesCART.Cantidad;
+                    //La variable TotalPrecio pondrá el nuevo precio del producto en el carrito
+                    const addProducto = new carritoModel({Nombre_Producto: buscarProductos?.Nombre_Producto, Cantidad: req.body.Cantidad, Precio: TotalPrecio}); 
                     await addProducto.save();
                     //Actualizar productos // La variable TotalStock guardará el stock total que quedo en la base de datos de Productos
-                    const TotalStock = buscarProductos.Cantidad - CantidadCART.Cantidad;
-                    buscarProductos.Cantidad = TotalStock;
-                    buscarProductos.save();
+                    const TotalStock = buscarProductos.Cantidad - OperacionesCART.Cantidad;
+                    //Para comprobar sí es 0 el Stock, sí es 0 se borrará el producto de la base de datos
+                    if(TotalStock == 0)
+                    {
+                        buscarProductos.delete();
+                    }else{
+                        buscarProductos.Cantidad = TotalStock;
+                        //Se mandará también un mensaje de que se encuentra en carrito
+                        buscarProductos.En_Carrito = true;
+                        buscarProductos.save();
+                    }                              
                     res.status(200).send(addProducto);
                     }else
                     {
@@ -66,7 +77,7 @@ const carritoController = {
                 const BuscarProducto = await carritoModel.findOne({Nombre_Producto: req.params.Nombre_Producto})
                 //Antes de eliminarlo creo también una variable que conecta con la base de datos de Producto
                 const Productos = await productosModel.findOne({... req.params})
-                //Este if sirve para comprobar si existe el producto deseado
+                //Este if sirve para comprobar si existe el producto deseado y también existe en la base de datos de Producto
                 if(BuscarProducto?.Nombre_Producto != undefined && Productos?.Nombre_Producto != undefined){
                 //Creo la variable del producto del carrito que se está por eliminar para devolver el stock en la base de datos de Producto
                     const StockCarrito = {Cantidad: BuscarProducto?.Cantidad}
@@ -78,11 +89,19 @@ const carritoController = {
                     //Una vez eliminado la base de datos, se guardará los stock sumados a la base de datos de PRODUCTOS
                     Productos.Cantidad = TotalStock;
                     Productos.save()
-
-                    res.status(200).send(`El producto ${BuscarProducto.Nombre_Producto} se elimino con exito del carrito y se devolvió el stock del carrito a la base de datos de Productos`);
-                    
-                    
-
+                    res.status(200).send(`El producto ${BuscarProducto.Nombre_Producto} se elimino con exito del carrito y \nse devolvió el stock del carrito a la base de datos de Productos`);                         
+                //Sí esta condiciíon se activa es porque existe el producto en la base de datos Carrito pero no en la base de datos Productos
+                }else if(BuscarProducto?.Nombre_Producto != undefined && Productos?.Nombre_Producto == undefined && BuscarProducto.Precio != undefined) 
+                {
+                    //Operaciones Matemáticas para devolver el precio Original
+                    const OperacionesCART = {Cantidad: BuscarProducto.Cantidad, Precio: BuscarProducto.Precio}
+                    const precioProducto = OperacionesCART.Precio / OperacionesCART.Cantidad;
+                    //Volver a crear el producto en la base de datos productos
+                    const newProducto = new productosModel({Nombre_Producto: BuscarProducto.Nombre_Producto, Cantidad: BuscarProducto.Cantidad, Precio: precioProducto, En_Carrito: false});
+                    newProducto.save();
+                    //Ahora borrará el producto del carrito y lo devolverá a la base de datos productos
+                    BuscarProducto.delete();
+                    res.status(200).send(`El producto ${BuscarProducto.Nombre_Producto} se elimino con exito del carrito y \nse devolvió el stock del carrito a la base de datos de Productos`)
                 }else{
                     res.status(404).send(`El producto ${req.params.Nombre_Producto} no existe en la base de datos`);
                 }
@@ -94,5 +113,6 @@ const carritoController = {
         },
 
 }
+
 
 export default carritoController;
