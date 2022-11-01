@@ -33,6 +33,11 @@ DB_CONNECTION_STRING = URI de MONGODB
 PORT = Cualquier Puerto Deseado
 ```
 
+## POSTMAN
+Mis configuraciones de POSTMAN se encuentran incluidas, lo único que se debería hacer es un IMPORT en POSTMAN a cada archivo los cuales son:
+- Carrito.postman_collection
+- Productos.postman_collection
+
 ## Repositorios que pueden ser de su interés.
 - Repositorio de [Script Personales](https://github.com/Javier12301/Personal-Scripts-JR) utilizados en Linux.
 
