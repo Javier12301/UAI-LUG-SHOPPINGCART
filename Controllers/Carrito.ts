@@ -78,6 +78,7 @@ const carritoController = {
                     //Una vez eliminado la base de datos, se guardará los stock sumados a la base de datos de PRODUCTOS
                     Productos.Cantidad = TotalStock;
                     Productos.save()
+
                     res.status(200).send(`El producto ${BuscarProducto.Nombre_Producto} se elimino con exito del carrito y se devolvió el stock del carrito a la base de datos de Productos`);
                     
                     
