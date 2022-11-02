@@ -72,6 +72,34 @@
 				}
 			},
 			"response": []
+		},
+		{
+			"name": "putProducto por parametros",
+			"request": {
+				"method": "PUT",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n    \"Nombre_Producto\": \"Computadoras\",\r\n    \"Cantidad\": 9\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "localhost:4000/ShoppingCart/carrito",
+					"host": [
+						"localhost"
+					],
+					"port": "4000",
+					"path": [
+						"ShoppingCart",
+						"carrito"
+					]
+				}
+			},
+			"response": []
 		}
 	]
 }
