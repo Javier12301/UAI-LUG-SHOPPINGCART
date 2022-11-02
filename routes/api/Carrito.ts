@@ -1,4 +1,5 @@
 import { Router } from "express";
+import { resolveModuleNameFromCache } from "typescript";
 import carritoController from "../../Controllers/Carrito";
 
 //Invocamos la ruta de express
@@ -11,6 +12,9 @@ router.get("/", carritoController.get)
 router.post("/", carritoController.add)
 
 //DELETE
-router.delete("/:Nombre_Producto", carritoController.delete);
+router.delete("/:Nombre_Producto", carritoController.delete)
+
+//PUT
+router.put("/", carritoController.put)
 
 export default router;

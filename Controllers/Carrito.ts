@@ -1,5 +1,7 @@
 import { Console, info } from "console";
 import { Request, Response} from "express";
+import { Server } from "http";
+import { Query } from "mongoose";
 import { type } from "os";
 import carritoModel from "../models/carrito";
 //Para poder obtener los productos de la base de datos, deberé importar el modelo de producto
@@ -112,7 +114,135 @@ const carritoController = {
             }
         },
 
+        put: async (req: Request, res: Response) => {
+            try
+            {
+                //Se obtendrá el producto de la base de datos del carrito
+                const obtenerProductoCART = await carritoModel.findOne({Nombre_Producto: req.body.Nombre_Producto})
+                //Se obtendrá el producto de la base de datos de producto
+                const obtenerProducto = await productosModel.findOne({Nombre_Producto: req.body.Nombre_Producto})
+                //El condicional este nos dirá si existen los dos productos en sus respectivas base de datos
+                if(obtenerProductoCART && obtenerProducto)
+                {
+                    //Obtenemos el cantidadTOTAL
+                    const stockTOTAL = getCantidadTOTAL(obtenerProductoCART?.Cantidad, obtenerProducto?.Cantidad)
+                    //Obtenemos el precio del producto, no el precio del producto en el carrito 
+                    const precioProducto = obtenerProducto?.Precio;
+                    //Obtenemos la nueva cantidad que se quiere modificar
+                    const nuevaCantidad = {Cantidad: req.body.Cantidad}
+                    //Obtenemos el stock restante que será devuelto a la base de datos de producto
+                    const stockRestante = getstockRestante(nuevaCantidad.Cantidad, stockTOTAL)
+                    //En el siguiente condicional, se comprobará que la cantidad nueva de productos no sea negativa
+                    //También si el precio del producto del carrito existe y también el precio del producto de la base de datos
+                    if(stockRestante >= 0 && precioProducto)
+                    {
+                        
+                     if(nuevaCantidad.Cantidad != 0)
+                     {
+                        //Sí stock restante es 0 se borrará el producto de la base de datos
+                        if(stockRestante == 0)
+                        {
+                            obtenerProducto?.delete();
+                        }else if(obtenerProducto?.Cantidad != null)
+                        {
+                            obtenerProducto.Cantidad = stockRestante
+                            obtenerProducto.save();
+                        }
+                        obtenerProductoCART.Cantidad = nuevaCantidad.Cantidad
+                        obtenerProductoCART.Precio = precioProducto * nuevaCantidad.Cantidad;
+                        obtenerProductoCART.save();
+                        res.status(200).send(`Se actualizo con exito el producto del carrito:\n* ${req.body.Nombre_Producto}\n* Cantidad: ${nuevaCantidad.Cantidad}\n\n`)
+                     }
+                     else
+                      {//Se eliminará el producto del carrito sí la nueva cantidad es 0
+                        obtenerProducto.Cantidad = stockRestante;
+                        obtenerProducto.save();
+                        obtenerProductoCART.delete()
+                        res.status(200).send(`Se elimino el producto del carrito y se envió el stock restante a \nla base de datos de Productos.`)
+                      }    
+                        
+                    }else
+                    {
+                        res.status(400).send(`No hay stock suficiente.`);
+                    }
+                } 
+                //El condicional este nos dirá si no existe en la base de datos carrito pero si existe el producto en la base de datos de producto     
+                if(!obtenerProductoCART && obtenerProducto)
+                {
+                    res.status(400).send(`No se puede actualizar, el producto ${req.body.Nombre_Producto} no existe en el carrito.`)
+                }
+                // El condicional se activa si existe el producto en el carrito pero no en la base de datos de producto          
+                if(obtenerProductoCART && !obtenerProducto)
+                {
+                    //Obtenemos el cantidadTOTAL
+                    const stockTOTAL = obtenerProductoCART.Cantidad
+                    //Obtenemos el precio del producto, no el precio del producto en el carrito 
+                    const precioProducto = getPrecio(obtenerProductoCART.Precio, stockTOTAL)
+                    //Obtenemos la nueva cantidad que se quiere modificar
+                    const nuevaCantidad = {Cantidad: req.body.Cantidad}
+                    //Obtenemos el stock restante que será devuelto a la base de datos de producto
+                    const stockRestante = getstockRestante(nuevaCantidad.Cantidad, stockTOTAL)
+                    //En el siguiente condicional, se comprobará que la cantidad nueva de productos no sea negativa ni 0
+                    //También si el precio del producto del carrito existe y también el precio del producto de la base de datos
+                    if(stockRestante > 0)
+                    {
+                        //Sí la nueva cantidad es 0, entonces se borrará el producto de la base de datos y se devolverá todo sus valores a la base de datos productos
+                        if(nuevaCantidad.Cantidad == 0)
+                        {
+                            const crearProducto = new productosModel({Nombre_Producto: obtenerProductoCART.Nombre_Producto, Cantidad: stockRestante, Precio: precioProducto, En_Carrito: false})
+                            crearProducto.save();
+                            obtenerProductoCART.delete();
+                            res.status(200).send(`Se elimino el producto ${req.body.Nombre_Producto} del carrito y se devolvió el stock a la base de datos Productos.`)
+                        } 
+                        if (nuevaCantidad.Cantidad > 0)
+                        {
+                            const crearProducto = new productosModel({Nombre_Producto: obtenerProductoCART.Nombre_Producto, Cantidad: stockRestante, Precio: precioProducto, En_Carrito: true})
+                            obtenerProductoCART.Cantidad = nuevaCantidad.Cantidad
+                            obtenerProductoCART.Precio = getPrecioTOTAL(precioProducto, nuevaCantidad.Cantidad)
+                            crearProducto.save();
+                            obtenerProductoCART.save();
+                            res.status(200).send(`Se actualizo con exito el producto del carrito:\n* Producto: ${obtenerProductoCART.Nombre_Producto}\n* Nueva cantidad: ${obtenerProductoCART.Cantidad}\n* Nuevo precio: ${obtenerProductoCART.Precio}\n\nSe devolvió a la base de datos producto:\n* Producto: ${req.body.Nombre_Producto}\n* Stock devuelto: ${stockRestante}`)
+                        }                       
+                    }else
+                    {
+                        res.status(400).send(`No se pudo actualizar, debido a que supero la cantidad de stock, el stock total del producto ${obtenerProductoCART.Nombre_Producto} es de: ${obtenerProductoCART.Cantidad}`)
+                    }
+                }
+                if(!obtenerProductoCART && !obtenerProducto)
+                {
+                    res.status(400).send(`El producto ${req.body.Nombre_Producto} no existe.`)
+                }
+            }
+            catch (error)
+            {
+                res.status(500).send(`Error en el servidor`);
+            }
+               
+        },
+
 }
 
+function getPrecio(precioTOTAL: any, cantidad: any)
+{
+    //Ecuación utilizada: precio = precioTOTAL/cantidad
+    return precioTOTAL/cantidad;
+}
+
+function getCantidadTOTAL(cantidad: any, stockRestante: any)
+{
+    return cantidad + stockRestante;
+}
+
+function getstockRestante(nuevaCantidad: any, stockTOTAL: any)
+{
+    //Ecuación utilizada: stockRestante = stockTOTAL - nuevaCantidad
+    return stockTOTAL - nuevaCantidad;
+}
+
+function getPrecioTOTAL(precio: any, cantidad: any)
+{
+    //Ecuación utilizada: precioTOTAL = precio * cantidad
+    return precio * cantidad;
+}
 
 export default carritoController;
