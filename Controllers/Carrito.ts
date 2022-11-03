@@ -31,26 +31,26 @@ const carritoController = {
             {
                 //Producto que se desea agregar, para agregar un producto se deberá escribir desde body
                 const buscarProductos = await productosModel.findOne({Nombre_Producto: req.body.Nombre_Producto});
-                
+                                                            //Consultas mongoose
                 //Revisar si existe el producto antes de agregarlo
-                if(buscarProductos?.Nombre_Producto != undefined || buscarProductos?.Nombre_Producto != null){
+                if(buscarProductos?.Nombre_Producto){
                 //OperacionesCART es la cantidad de productos que se quiuere tener ahora y también tendrá el precio que se obtendrá de la base de datos productos
                 const OperacionesCART = {Cantidad: req.body.Cantidad, Precio: buscarProductos.Precio}
                 if(OperacionesCART.Cantidad <= buscarProductos.Cantidad ){
                     //Si se cumple la condición, se agregará el producto y se descontará la cantidad de productos del model producto                   
                     //La variable TotalPrecio guardará el nuevo precio según la cantidad de productos ingresados
-                    const TotalPrecio = OperacionesCART.Precio * OperacionesCART.Cantidad;
+                    const TotalPrecio = getPrecioTOTAL(OperacionesCART.Precio, OperacionesCART.Cantidad);
                     //La variable TotalPrecio pondrá el nuevo precio del producto en el carrito
                     const addProducto = new carritoModel({Nombre_Producto: buscarProductos?.Nombre_Producto, Cantidad: req.body.Cantidad, Precio: TotalPrecio}); 
                     await addProducto.save();
                     //Actualizar productos // La variable TotalStock guardará el stock total que quedo en la base de datos de Productos
-                    const TotalStock = buscarProductos.Cantidad - OperacionesCART.Cantidad;
+                    const stockRestante = getstockRestante(OperacionesCART.Cantidad, buscarProductos.Cantidad);
                     //Para comprobar sí es 0 el Stock, sí es 0 se borrará el producto de la base de datos
-                    if(TotalStock == 0)
+                    if(stockRestante == 0)
                     {
                         buscarProductos.delete();
                     }else{
-                        buscarProductos.Cantidad = TotalStock;
+                        buscarProductos.Cantidad = stockRestante;
                         //Se mandará también un mensaje de que se encuentra en carrito
                         buscarProductos.En_Carrito = true;
                         buscarProductos.save();
@@ -58,10 +58,10 @@ const carritoController = {
                     res.status(200).send(addProducto);
                     }else
                     {
-                        res.status(400).send(`No se puede agregar el producto porque el producto ${buscarProductos.Nombre_Producto} no tiene stock suficiente`);
+                        res.status(400).send(`No se puede agregar el producto porque el producto ${req.body.Nombre_Producto}\nno tiene stock suficiente.`);
                     }             
                 }else{
-                    res.status(404).send(`El producto ${buscarProductos?.Nombre_Producto} no existe en la base de datos.`)
+                    res.status(404).send(`El producto ${req.body.Nombre_Producto} no existe en la base de datos.`)
                 //HTTP STATUS NOT FOUND
                 }
             }
@@ -78,26 +78,26 @@ const carritoController = {
                 //Buscar el producto a eliminar del carrito con parametros
                 const BuscarProducto = await carritoModel.findOne({Nombre_Producto: req.params.Nombre_Producto})
                 //Antes de eliminarlo creo también una variable que conecta con la base de datos de Producto
-                const Productos = await productosModel.findOne({... req.params})
+                const Productos = await productosModel.findOne({Nombre_Producto: req.params.Nombre_Producto})
                 //Este if sirve para comprobar si existe el producto deseado y también existe en la base de datos de Producto
-                if(BuscarProducto?.Nombre_Producto != undefined && Productos?.Nombre_Producto != undefined){
+                if(BuscarProducto?.Nombre_Producto && Productos?.Nombre_Producto){
                 //Creo la variable del producto del carrito que se está por eliminar para devolver el stock en la base de datos de Producto
                     const StockCarrito = {Cantidad: BuscarProducto?.Cantidad}
                     //Guardo el stock que tiene almacenado la base de datos de Producto
                     const StockProductos = {Cantidad: Productos?.Cantidad}
                     //Ahora creo una variable que guardará el stock de ProductoCarrito y sumará ese Stock con el Stock de la base de datos de Producto
-                    const TotalStock = StockCarrito.Cantidad + StockProductos.Cantidad
+                    const TotalStock = getCantidadTOTAL(StockCarrito.Cantidad, StockProductos.Cantidad);
                     const productoNombre = await carritoModel.findOneAndDelete({Nombre_Producto: req.params.Nombre_Producto})
                     //Una vez eliminado la base de datos, se guardará los stock sumados a la base de datos de PRODUCTOS
                     Productos.Cantidad = TotalStock;
                     Productos.save()
                     res.status(200).send(`El producto ${BuscarProducto.Nombre_Producto} se elimino con exito del carrito y \nse devolvió el stock del carrito a la base de datos de Productos`);                         
                 //Sí esta condiciíon se activa es porque existe el producto en la base de datos Carrito pero no en la base de datos Productos
-                }else if(BuscarProducto?.Nombre_Producto != undefined && Productos?.Nombre_Producto == undefined && BuscarProducto.Precio != undefined) 
+                }else if(BuscarProducto?.Nombre_Producto && !Productos?.Nombre_Producto && BuscarProducto.Precio) 
                 {
                     //Operaciones Matemáticas para devolver el precio Original
                     const OperacionesCART = {Cantidad: BuscarProducto.Cantidad, Precio: BuscarProducto.Precio}
-                    const precioProducto = OperacionesCART.Precio / OperacionesCART.Cantidad;
+                    const precioProducto = getPrecio(OperacionesCART.Precio, OperacionesCART.Cantidad);
                     //Volver a crear el producto en la base de datos productos
                     const newProducto = new productosModel({Nombre_Producto: BuscarProducto.Nombre_Producto, Cantidad: BuscarProducto.Cantidad, Precio: precioProducto, En_Carrito: false});
                     newProducto.save();
@@ -156,8 +156,9 @@ const carritoController = {
                      else
                       {//Se eliminará el producto del carrito sí la nueva cantidad es 0
                         obtenerProducto.Cantidad = stockRestante;
+                        obtenerProducto.En_Carrito = false;
                         obtenerProducto.save();
-                        obtenerProductoCART.delete()
+                        obtenerProductoCART.delete();
                         res.status(200).send(`Se elimino el producto del carrito y se envió el stock restante a \nla base de datos de Productos.`)
                       }    
                         
@@ -192,7 +193,7 @@ const carritoController = {
                             const crearProducto = new productosModel({Nombre_Producto: obtenerProductoCART.Nombre_Producto, Cantidad: stockRestante, Precio: precioProducto, En_Carrito: false})
                             crearProducto.save();
                             obtenerProductoCART.delete();
-                            res.status(200).send(`Se elimino el producto ${req.body.Nombre_Producto} del carrito y se devolvió el stock a la base de datos Productos.`)
+                            res.status(200).send(`Se elimino el producto ${req.body.Nombre_Producto} del carrito \ny se devolvió el stock a la base de datos Productos.`)
                         } 
                         if (nuevaCantidad.Cantidad > 0)
                         {
