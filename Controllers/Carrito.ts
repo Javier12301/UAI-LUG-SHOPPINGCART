@@ -90,6 +90,7 @@ const carritoController = {
                     const productoNombre = await carritoModel.findOneAndDelete({Nombre_Producto: req.params.Nombre_Producto})
                     //Una vez eliminado la base de datos, se guardará los stock sumados a la base de datos de PRODUCTOS
                     Productos.Cantidad = TotalStock;
+                    Productos.En_Carrito = false;
                     Productos.save()
                     res.status(200).send(`El producto ${BuscarProducto.Nombre_Producto} se elimino con exito del carrito y \nse devolvió el stock del carrito a la base de datos de Productos`);                         
                 //Sí esta condiciíon se activa es porque existe el producto en la base de datos Carrito pero no en la base de datos Productos
