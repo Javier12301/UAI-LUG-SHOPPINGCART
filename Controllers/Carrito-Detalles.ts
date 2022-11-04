@@ -3,7 +3,7 @@ import { Request, Response} from "express";
 import { Server } from "http";
 import { Query } from "mongoose";
 import { type } from "os";
-import carritoModel from "../models/carrito";
+import carritoModel from "../Models/Carrito-Detalles";
 //Para poder obtener los productos de la base de datos, deberé importar el modelo de producto
 import productosModel from "../Models/Productos";
 
@@ -11,9 +11,11 @@ import productosModel from "../Models/Productos";
 const carritoController = {
         //Req tendrá la información sobre la petición HTTP del Evento
         //Res devolverá la repuesta HTTP deseada.   
+    
         get: async (req: Request, res: Response) => {
             try
             {
+                
                 //Obtener Productos
                 const buscarProductos = await carritoModel.find()
                 //Se mostrará la lista de productos en el carrito
@@ -51,8 +53,6 @@ const carritoController = {
                         buscarProductos.delete();
                     }else{
                         buscarProductos.Cantidad = stockRestante;
-                        //Se mandará también un mensaje de que se encuentra en carrito
-                        buscarProductos.En_Carrito = true;
                         buscarProductos.save();
                     }                              
                     res.status(200).send(addProducto);
@@ -90,7 +90,6 @@ const carritoController = {
                     const productoNombre = await carritoModel.findOneAndDelete({Nombre_Producto: req.params.Nombre_Producto})
                     //Una vez eliminado la base de datos, se guardará los stock sumados a la base de datos de PRODUCTOS
                     Productos.Cantidad = TotalStock;
-                    Productos.En_Carrito = false;
                     Productos.save()
                     res.status(200).send(`El producto ${BuscarProducto.Nombre_Producto} se elimino con exito del carrito y \nse devolvió el stock del carrito a la base de datos de Productos`);                         
                 //Sí esta condiciíon se activa es porque existe el producto en la base de datos Carrito pero no en la base de datos Productos
@@ -100,7 +99,7 @@ const carritoController = {
                     const OperacionesCART = {Cantidad: BuscarProducto.Cantidad, Precio: BuscarProducto.Precio}
                     const precioProducto = getPrecio(OperacionesCART.Precio, OperacionesCART.Cantidad);
                     //Volver a crear el producto en la base de datos productos
-                    const newProducto = new productosModel({Nombre_Producto: BuscarProducto.Nombre_Producto, Cantidad: BuscarProducto.Cantidad, Precio: precioProducto, En_Carrito: false});
+                    const newProducto = new productosModel({Nombre_Producto: BuscarProducto.Nombre_Producto, Cantidad: BuscarProducto.Cantidad, Precio: precioProducto});
                     newProducto.save();
                     //Ahora borrará el producto del carrito y lo devolverá a la base de datos productos
                     BuscarProducto.delete();
@@ -157,7 +156,6 @@ const carritoController = {
                      else
                       {//Se eliminará el producto del carrito sí la nueva cantidad es 0
                         obtenerProducto.Cantidad = stockRestante;
-                        obtenerProducto.En_Carrito = false;
                         obtenerProducto.save();
                         obtenerProductoCART.delete();
                         res.status(200).send(`Se elimino el producto del carrito y se envió el stock restante a \nla base de datos de Productos.`)
@@ -191,14 +189,14 @@ const carritoController = {
                         //Sí la nueva cantidad es 0, entonces se borrará el producto de la base de datos y se devolverá todo sus valores a la base de datos productos
                         if(nuevaCantidad.Cantidad == 0)
                         {
-                            const crearProducto = new productosModel({Nombre_Producto: obtenerProductoCART.Nombre_Producto, Cantidad: stockRestante, Precio: precioProducto, En_Carrito: false})
+                            const crearProducto = new productosModel({Nombre_Producto: obtenerProductoCART.Nombre_Producto, Cantidad: stockRestante, Precio: precioProducto})
                             crearProducto.save();
                             obtenerProductoCART.delete();
                             res.status(200).send(`Se elimino el producto ${req.body.Nombre_Producto} del carrito \ny se devolvió el stock a la base de datos Productos.`)
                         } 
                         if (nuevaCantidad.Cantidad > 0)
                         {
-                            const crearProducto = new productosModel({Nombre_Producto: obtenerProductoCART.Nombre_Producto, Cantidad: stockRestante, Precio: precioProducto, En_Carrito: true})
+                            const crearProducto = new productosModel({Nombre_Producto: obtenerProductoCART.Nombre_Producto, Cantidad: stockRestante, Precio: precioProducto})
                             obtenerProductoCART.Cantidad = nuevaCantidad.Cantidad
                             obtenerProductoCART.Precio = getPrecioTOTAL(precioProducto, nuevaCantidad.Cantidad)
                             crearProducto.save();

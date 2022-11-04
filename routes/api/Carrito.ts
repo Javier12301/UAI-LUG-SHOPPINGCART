@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { resolveModuleNameFromCache } from "typescript";
-import carritoController from "../../Controllers/Carrito";
+import carritoController from "../../Controllers/Carrito-Detalles";
 
 //Invocamos la ruta de express
 const router = Router();
