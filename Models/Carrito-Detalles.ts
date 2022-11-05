@@ -7,4 +7,4 @@ const carritoDetallesSchema = new Schema({
     Precio: {type: Number}
 });
 
-export default model("Carrito", carritoDetallesSchema);
+export default model("Carrito_Detalles", carritoDetallesSchema);
