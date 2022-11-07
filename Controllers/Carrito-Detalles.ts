@@ -127,17 +127,12 @@ const carrito_DetailsController = {
                     const productoNombre = await carritoDetallesModel.findOneAndDelete({Nombre_Producto: req.params.Nombre_Producto})
                     //Una vez eliminado la base de datos, se guardará los stock sumados a la base de datos de PRODUCTOS
                     Productos.Cantidad = TotalStock;
-                    if(existeCarrito.Carrito_Details.length)
+                    if(existeCarrito)
                     {
-                        //tamaño del array
-                        const lenghtCarrito = existeCarrito.Carrito_Details.length;
-                        for(let i=0 ; i <= lenghtCarrito; i++)
-                        {
-                            if(existeCarrito.Carrito_Details[i] == BuscarProducto.Nombre_Producto)
-                            {
-                                
-                            }
-                        }
+                        //Eliminar valores del array
+                        const deleteProductoArray = existeCarrito.Carrito_Details.filter((BuscarProducto => BuscarProducto.Nombre_Producto != req.params.Nombre_Producto))
+                        existeCarrito.Carrito_Details = deleteProductoArray;
+                        existeCarrito.save();
                     }
                     Productos.save()
                     res.status(200).send(`El producto ${BuscarProducto.Nombre_Producto} se elimino con exito del carrito y \nse devolvió el stock del carrito a la base de datos de Productos`);                         
@@ -150,6 +145,14 @@ const carrito_DetailsController = {
                     //Volver a crear el producto en la base de datos productos
                     const newProducto = new productosModel({Nombre_Producto: BuscarProducto.Nombre_Producto, Cantidad: BuscarProducto.Cantidad, Precio: precioProducto});
                     newProducto.save();
+                    //Actualizar array
+                    if(existeCarrito)
+                    {
+                        //Eliminar valores del array
+                        const deleteProductoArray = existeCarrito.Carrito_Details.filter((BuscarProducto => BuscarProducto.Nombre_Producto != req.params.Nombre_Producto))
+                        existeCarrito.Carrito_Details = deleteProductoArray;
+                        existeCarrito.save();
+                    }
                     //Ahora borrará el producto del carrito y lo devolverá a la base de datos productos
                     BuscarProducto.delete();
                     res.status(200).send(`El producto ${BuscarProducto.Nombre_Producto} se elimino con exito del carrito y \nse devolvió el stock del carrito a la base de datos de Productos`)
