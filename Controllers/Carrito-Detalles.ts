@@ -47,11 +47,14 @@ const carrito_DetailsController = {
                 const buscarProductos = await productosModel.findOne({Nombre_Producto: req.body.Nombre_Producto});
                 const existeCarrito = await carritoModel.findOne({Nombre_Carrito: "Carrito"})
                                     //Consultas mongoose
-                if(existeCarrito)
+                if(!existeCarrito)
                 {
+                    crearCarrito();
+                }
+                
                 
                 //Revisar si existe el producto antes de agregarlo
-                if(buscarProductos?.Nombre_Producto){
+                if(buscarProductos?.Nombre_Producto && existeCarrito){
                 //OperacionesCART es la cantidad de productos que se quiuere tener ahora y también tendrá el precio que se obtendrá de la base de datos productos
                 const OperacionesCART = {Cantidad: req.body.Cantidad, Precio: buscarProductos.Precio}
                 if(OperacionesCART.Cantidad <= buscarProductos.Cantidad ){
@@ -63,15 +66,23 @@ const carrito_DetailsController = {
                     await addProducto.save();
                     //Actualizar productos // La variable TotalStock guardará el stock total que quedo en la base de datos de Productos
                     const stockRestante = getstockRestante(OperacionesCART.Cantidad, buscarProductos.Cantidad);
+                    //carritoLenght obtenemos el tamaño del array
+                    const carritoLenght = existeCarrito.Carrito_Details.length
                     //Para comprobar sí es 0 el Stock, sí es 0 se borrará el producto de la base de datos
-                    if(stockRestante == 0 && existeCarrito.Carrito_Details?.length)
+                    if(stockRestante == 0)
                     {
+                        
+                        existeCarrito?.Carrito_Details.push(addProducto)
+                        existeCarrito.Precio_Total = getPreciocarritoList(existeCarrito.Precio_Total, TotalPrecio);
+                        existeCarrito.save();
                         buscarProductos.delete();
                         
                     }else{
                         buscarProductos.Cantidad = stockRestante;
                         buscarProductos.save();
-
+                        existeCarrito?.Carrito_Details.push(addProducto)
+                        existeCarrito.Precio_Total = getPreciocarritoList(existeCarrito.Precio_Total, TotalPrecio);
+                        existeCarrito.save();
                     }                            
                     //COndicionales para subir en array
                     res.status(200).send(addProducto);
@@ -83,11 +94,7 @@ const carrito_DetailsController = {
                     res.status(404).send(`El producto ${req.body.Nombre_Producto} no existe en la base de datos.`)
                 //HTTP STATUS NOT FOUND
                 }
-                }else
-                {
-                    crearCarrito();
-                    res.status(200).send(`Se creo un carrito.`)
-                }
+                
             }
             catch(error)
             {
@@ -103,10 +110,13 @@ const carrito_DetailsController = {
                 const BuscarProducto = await carritoDetallesModel.findOne({Nombre_Producto: req.params.Nombre_Producto})
                 //Antes de eliminarlo creo también una variable que conecta con la base de datos de Producto
                 const Productos = await productosModel.findOne({Nombre_Producto: req.params.Nombre_Producto})
-                //Este if sirve para comprobar si existe el producto deseado y también existe en la base de datos de Producto
-                const existeCarrito = await carritoModel.find()
-                if(existeCarrito)
+                const existeCarrito = await carritoModel.findOne({Nombre_Carrito: "Carrito"})
+                if(!existeCarrito)
                 {
+                    crearCarrito()
+                }
+                
+                //Este if sirve para comprobar si existe el producto deseado y también existe en la base de datos de Producto
                 if(BuscarProducto?.Nombre_Producto && Productos?.Nombre_Producto){
                 //Creo la variable del producto del carrito que se está por eliminar para devolver el stock en la base de datos de Producto
                     const StockCarrito = {Cantidad: BuscarProducto?.Cantidad}
@@ -117,6 +127,18 @@ const carrito_DetailsController = {
                     const productoNombre = await carritoDetallesModel.findOneAndDelete({Nombre_Producto: req.params.Nombre_Producto})
                     //Una vez eliminado la base de datos, se guardará los stock sumados a la base de datos de PRODUCTOS
                     Productos.Cantidad = TotalStock;
+                    if(existeCarrito.Carrito_Details.length)
+                    {
+                        //tamaño del array
+                        const lenghtCarrito = existeCarrito.Carrito_Details.length;
+                        for(let i=0 ; i <= lenghtCarrito; i++)
+                        {
+                            if(existeCarrito.Carrito_Details[i] == BuscarProducto.Nombre_Producto)
+                            {
+                                
+                            }
+                        }
+                    }
                     Productos.save()
                     res.status(200).send(`El producto ${BuscarProducto.Nombre_Producto} se elimino con exito del carrito y \nse devolvió el stock del carrito a la base de datos de Productos`);                         
                 //Sí esta condiciíon se activa es porque existe el producto en la base de datos Carrito pero no en la base de datos Productos
@@ -134,11 +156,7 @@ const carrito_DetailsController = {
                 }else{
                     res.status(404).send(`El producto ${req.params.Nombre_Producto} no existe en la base de datos`);
                 }
-                }else
-                {
-                    crearCarrito()
-                    res.status(200).send(`Se creo un carrito.`)
-                }
+                
             }
             catch(error)
             {
@@ -288,6 +306,12 @@ function getPrecioTOTAL(precio: any, cantidad: any)
 function crearCarrito()
 {
     const newCarrito = new carritoModel({Nombre_Carrito: "Carrito", Carrito_Details: [], Precio_Total: 0}); 
+    newCarrito.save();
+}
+
+function getPreciocarritoList(precioTOTALCARRITOLIST: any, precioTOTALCARRITODETAILS: any)
+{
+    return precioTOTALCARRITODETAILS + precioTOTALCARRITOLIST;
 }
 
 export default carrito_DetailsController;

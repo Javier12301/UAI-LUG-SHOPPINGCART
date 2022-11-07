@@ -27,12 +27,7 @@ const carritoController = {
 
 
     },
-
-
-
-
-
-
 }
 
+export default carritoController;
 
