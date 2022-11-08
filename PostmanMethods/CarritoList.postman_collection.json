@@ -1,0 +1,29 @@
+{
+	"info": {
+		"_postman_id": "678c297b-1ec6-48c0-9fb7-5fbcb9e86024",
+		"name": "CarritoList",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "23124487"
+	},
+	"item": [
+		{
+			"name": "GetCarritoList",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "localhost:4000/ShoppingCart/carritolist",
+					"host": [
+						"localhost"
+					],
+					"port": "4000",
+					"path": [
+						"ShoppingCart",
+						"carritolist"
+					]
+				}
+			},
+			"response": []
+		}
+	]
+}
