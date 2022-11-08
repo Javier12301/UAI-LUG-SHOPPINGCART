@@ -127,11 +127,13 @@ const carrito_DetailsController = {
                     const productoNombre = await carritoDetallesModel.findOneAndDelete({Nombre_Producto: req.params.Nombre_Producto})
                     //Una vez eliminado la base de datos, se guardará los stock sumados a la base de datos de PRODUCTOS
                     Productos.Cantidad = TotalStock;
-                    if(existeCarrito)
+                    
+                    if(existeCarrito && BuscarProducto.Precio)
                     {
                         //Eliminar valores del array
                         const deleteProductoArray = existeCarrito.Carrito_Details.filter((BuscarProducto => BuscarProducto.Nombre_Producto != req.params.Nombre_Producto))
                         existeCarrito.Carrito_Details = deleteProductoArray;
+                        existeCarrito.Precio_Total = existeCarrito.Precio_Total - BuscarProducto.Precio
                         existeCarrito.save();
                     }
                     Productos.save()
@@ -151,6 +153,7 @@ const carrito_DetailsController = {
                         //Eliminar valores del array
                         const deleteProductoArray = existeCarrito.Carrito_Details.filter((BuscarProducto => BuscarProducto.Nombre_Producto != req.params.Nombre_Producto))
                         existeCarrito.Carrito_Details = deleteProductoArray;
+                        existeCarrito.Precio_Total = existeCarrito.Precio_Total - BuscarProducto.Precio
                         existeCarrito.save();
                     }
                     //Ahora borrará el producto del carrito y lo devolverá a la base de datos productos
@@ -175,9 +178,12 @@ const carrito_DetailsController = {
                 //Se obtendrá el producto de la base de datos de producto
                 const obtenerProducto = await productosModel.findOne({Nombre_Producto: req.body.Nombre_Producto})
                 //El condicional este nos dirá si existen los dos productos en sus respectivas base de datos
-                const existeCarrito = await carritoModel.find()
-                if(existeCarrito)
+                const existeCarrito = await carritoModel.findOne({Nombre_Carrito: "Carrito"})
+                if(!existeCarrito)
                 {
+                    crearCarrito();
+                }
+
                 if(obtenerProductoCART && obtenerProducto)
                 {
                     //Obtenemos el cantidadTOTAL
@@ -188,9 +194,11 @@ const carrito_DetailsController = {
                     const nuevaCantidad = {Cantidad: req.body.Cantidad}
                     //Obtenemos el stock restante que será devuelto a la base de datos de producto
                     const stockRestante = getstockRestante(nuevaCantidad.Cantidad, stockTOTAL)
+                     //Crear una variable para guardar el precio antiguo
+                    const precioCARTAntiguo = obtenerProductoCART.Precio;
                     //En el siguiente condicional, se comprobará que la cantidad nueva de productos no sea negativa
                     //También si el precio del producto del carrito existe y también el precio del producto de la base de datos
-                    if(stockRestante >= 0 && precioProducto)
+                    if(stockRestante >= 0 && precioProducto && existeCarrito && obtenerProductoCART && precioCARTAntiguo)
                     {
                         
                      if(nuevaCantidad.Cantidad != 0)
@@ -204,13 +212,34 @@ const carrito_DetailsController = {
                             obtenerProducto.Cantidad = stockRestante
                             obtenerProducto.save();
                         }
+                       
                         obtenerProductoCART.Cantidad = nuevaCantidad.Cantidad
                         obtenerProductoCART.Precio = precioProducto * nuevaCantidad.Cantidad;
                         obtenerProductoCART.save();
+                        //Actualizar Array
+                        const index = existeCarrito.Carrito_Details.findIndex((producto) => {
+                            return producto.Nombre_Producto == obtenerProductoCART.Nombre_Producto
+                        });
+                        const updateArray = existeCarrito.Carrito_Details.splice(index, 1)
+                        existeCarrito.Carrito_Details.push(obtenerProductoCART);
+                        //Comprobar si existe solo un producto en el carritp
+                        existeCarrito.Precio_Total = existeCarrito.Precio_Total + obtenerProductoCART.Precio - precioCARTAntiguo 
+                        existeCarrito.save();
                         res.status(200).send(`Se actualizo con exito el producto del carrito:\n* ${req.body.Nombre_Producto}\n* Cantidad: ${nuevaCantidad.Cantidad}\n\n`)
                      }
                      else
-                      {//Se eliminará el producto del carrito sí la nueva cantidad es 0
+                      {
+                        if(existeCarrito && obtenerProductoCART.Precio)
+                        {
+                        //Eliminar valores del array
+                           
+                        existeCarrito.Carrito_Details = existeCarrito.Carrito_Details.filter((producto) => {
+                            return producto.Nombre_Producto != obtenerProductoCART.Nombre_Producto
+                        })
+                        existeCarrito.Precio_Total = existeCarrito.Precio_Total - obtenerProductoCART.Precio
+                        existeCarrito.save();
+                        }           
+                        //Se eliminará el producto del carrito sí la nueva cantidad es 0
                         obtenerProducto.Cantidad = stockRestante;
                         obtenerProducto.save();
                         obtenerProductoCART.delete();
@@ -238,25 +267,41 @@ const carrito_DetailsController = {
                     const nuevaCantidad = {Cantidad: req.body.Cantidad}
                     //Obtenemos el stock restante que será devuelto a la base de datos de producto
                     const stockRestante = getstockRestante(nuevaCantidad.Cantidad, stockTOTAL)
+                    const precioCARTAntiguo = obtenerProductoCART.Precio;
                     //En el siguiente condicional, se comprobará que la cantidad nueva de productos no sea negativa ni 0
                     //También si el precio del producto del carrito existe y también el precio del producto de la base de datos
                     if(stockRestante > 0)
                     {
                         //Sí la nueva cantidad es 0, entonces se borrará el producto de la base de datos y se devolverá todo sus valores a la base de datos productos
-                        if(nuevaCantidad.Cantidad == 0)
+                        if(nuevaCantidad.Cantidad == 0 && existeCarrito && obtenerProductoCART.Precio)
                         {
                             const crearProducto = new productosModel({Nombre_Producto: obtenerProductoCART.Nombre_Producto, Cantidad: stockRestante, Precio: precioProducto})
                             crearProducto.save();
+                           //Eliminar valores del array
+                            existeCarrito.Carrito_Details = existeCarrito.Carrito_Details.filter((producto) => {
+                            return producto.Nombre_Producto != obtenerProductoCART.Nombre_Producto
+                            })
+                            existeCarrito.Precio_Total = existeCarrito.Precio_Total - obtenerProductoCART.Precio
+                            existeCarrito.save();
                             obtenerProductoCART.delete();
                             res.status(200).send(`Se elimino el producto ${req.body.Nombre_Producto} del carrito \ny se devolvió el stock a la base de datos Productos.`)
                         } 
-                        if (nuevaCantidad.Cantidad > 0)
+                        if (nuevaCantidad.Cantidad > 0 && existeCarrito && obtenerProductoCART.Precio && precioCARTAntiguo)
                         {
                             const crearProducto = new productosModel({Nombre_Producto: obtenerProductoCART.Nombre_Producto, Cantidad: stockRestante, Precio: precioProducto})
                             obtenerProductoCART.Cantidad = nuevaCantidad.Cantidad
                             obtenerProductoCART.Precio = getPrecioTOTAL(precioProducto, nuevaCantidad.Cantidad)
                             crearProducto.save();
                             obtenerProductoCART.save();
+                            //Actualizar Array
+                            const index = existeCarrito.Carrito_Details.findIndex((producto) => {
+                                return producto.Nombre_Producto == obtenerProductoCART.Nombre_Producto
+                                });
+                                const updateArray = existeCarrito.Carrito_Details.splice(index, 1)
+                                existeCarrito.Carrito_Details.push(obtenerProductoCART);
+                                //Comprobar si existe solo un producto en el carritp
+                                existeCarrito.Precio_Total = existeCarrito.Precio_Total + obtenerProductoCART.Precio - precioCARTAntiguo 
+                                existeCarrito.save();
                             res.status(200).send(`Se actualizo con exito el producto del carrito:\n* Producto: ${obtenerProductoCART.Nombre_Producto}\n* Nueva cantidad: ${obtenerProductoCART.Cantidad}\n* Nuevo precio: ${obtenerProductoCART.Precio}\n\nSe devolvió a la base de datos producto:\n* Producto: ${req.body.Nombre_Producto}\n* Stock devuelto: ${stockRestante}`)
                         }                       
                     }else
@@ -268,11 +313,7 @@ const carrito_DetailsController = {
                 {
                     res.status(400).send(`El producto ${req.body.Nombre_Producto} no existe.`)
                 }
-                }else
-                {
-                    crearCarrito()
-                    res.status(200).send(`Se creo un carrito.`)
-                }
+                
             }
             catch (error)
             {
