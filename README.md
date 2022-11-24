@@ -24,7 +24,7 @@ git clone https://github.com/Javier12301/UAI-LUG-SHOPPINGCART.git
 
 - Despues de hacer esto, nos dirigimos al terminal de VSCODE y ejecutamos:
 ```bash
-npm run i
+npm i
 ```
 
 - Creamos un archivo llamado .env y le agregamos en el código lo siguiente: 
